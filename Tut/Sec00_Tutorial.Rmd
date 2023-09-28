@@ -1,0 +1,70 @@
+---
+title: "Introduction to RMarkdown Tutorial"
+author: Add your name here
+output: 
+  html_document:
+    number_sections: true
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document will describe the basic setup for using RMarkdown, and how
+it can be used to mix writing and statistical analysis.
+
+# Confirm you can knit this
+
+First, before making any changes, simply press `Knit` above, to create
+the "knitted" html output of this document. It will not contain any
+code, just the text directions here.
+
+# Perform a simple calculation
+
+In the empty code chunk below, compute the average of the numbers
+1,2,3,4,5. Your output, when you knit the document, should show the code
+you use to do this **and the answer**.
+
+```{r}
+
+mean(c(1,2,3,4,5))
+
+```
+
+# Write a comment in your code chunk
+
+Now, instead compute the median of the same 5 numbers. In the code
+chunk, write a brief comment, starting with `#`, explaining what the
+median is. Notice how this is printed when you knit the file.
+
+```{r}
+# median is...
+
+```
+
+# Create a plot
+
+In the below code, use the `rnorm` function to generate 100 random draws
+from a normal distribution with mean 0 and variance 1. Save these in an
+object called `x`. Then run `hist(x)`. Use comments (`#`) to describe
+the plot that is created, and what happens if you re-knit this to the
+plot.
+
+```{r}
+
+
+x <- rnorm(n=100, mean=0, sd=1)
+hist(x)
+# this plot describes...
+
+```
+
+# Add your name and save as a pdf
+
+Finally, modify the second line in this document, after `author` to
+include your own name. Then, after knitting this, open the created html
+document in a browser and save it as a pdf. This is how you will need to
+create your homework and project submissions.

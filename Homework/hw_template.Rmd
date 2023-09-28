@@ -1,0 +1,18 @@
+---
+title: "Homework Template"
+author: "Your Name Here"
+date: "2023-09-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Heading 1
+
+Use this heading for each of the overall sections in the homework
+
+## Subheading 1
+
+Use this for each problem within a given section
