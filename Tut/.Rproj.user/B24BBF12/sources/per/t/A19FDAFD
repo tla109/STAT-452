@@ -3,7 +3,7 @@
     "path": "C:/Users/Terry Liu/Desktop/STAT 452/Homework/hw_1/hw_1.Rmd",
     "project_path": null,
     "type": "r_markdown",
-    "hash": "968014385",
+    "hash": "1443861392",
     "contents": "",
     "dirty": false,
     "created": 1695676992329.0,
@@ -12,16 +12,16 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "272,3",
-        "scrollLine": "260",
-        "last_setup_crc32": "6449cebcbb338d19"
+        "cursorPosition": "326,22",
+        "scrollLine": "313",
+        "last_setup_crc32": "3e45b33dbb338d19"
     },
     "folds": "",
-    "lastKnownWriteTime": 1695796703,
+    "lastKnownWriteTime": 1695888598,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1695796703487,
+    "last_content_update": 1695888598965,
     "read_only": false,
     "read_only_alternatives": []
 }
