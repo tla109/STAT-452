@@ -89,7 +89,7 @@ hybrid stepwise has 3 of the 5.
 
 ## 3
 
-### (a),(b),(c)
+### (a),(b),(c),(d)
 
 ```{r}
 set.seed(2928893)
@@ -106,6 +106,9 @@ get.folds <- function(n, K) {
   return(folds.rand)
 }
 
+get.MSPE <- function(Y, Y.hat) {
+  return(mean((Y - Y.hat)^2))
+}
 
 ### Number of folds
 K <- 10
@@ -116,7 +119,7 @@ folds <- get.folds(n, K)
 
 ### Create a container for MSPEs. Let's include ordinary least-squares
 ### regression for reference
-all.models <- c("LS", "Ridge", "LASSO-Min", "LASSO-1se")
+all.models <- c("Ridge", "LASSO-Min", "LASSO-1se")
 all.MSPEs <- array(0, dim = c(K, length(all.models)))
 colnames(all.MSPEs) <- all.models
 
@@ -131,19 +134,8 @@ for (i in 1:K) {
   Y.train <- data.train$Ozone
   Y.valid <- data.valid$Ozone
 
-  ###################################################################
-  ### First, let's quickly do LS so we have a reference point for ###
-  ### how well the other models do.                               ###
-  ###################################################################
-
-  fit.ls <- lm(Ozone ~ ., data = data.train)
-  pred.ls <- predict(fit.ls, newdata = data.valid)
-  MSPE.ls <- get.MSPE(Y.valid, pred.ls)
-  all.MSPEs[i, "LS"] <- MSPE.ls
-
-
   #######################################################################
-  ### Next, let's do ridge regression. This model is fit using the    ###
+  ### Let's do ridge regression. This model is fit using the    ###
   ### lm.ridge() function in the MASS package. We will need to make a ###
   ### list of candidate lambda values for the function to choose      ###
   ### from. Prediction also has some extra steps, but we'll discuss   ###
@@ -281,5 +273,165 @@ for (i in 1:K) {
   all.MSPEs[i, "LASSO-1se"] <- MSPE.LASSO.1se
 }
 
-```
+all.MSPEs
+avg.MSPEs = colMeans(all.MSPEs)
+avg.MSPEs
 
+```
+On average, ridge regression produces the smallest prediction error.
+
+### (e)
+
+```{r}
+library(stringr)
+
+all.MSPEs.LS.step <- array(0, dim = c(K, 2))
+colnames(all.MSPEs.LS.step) <- c("LS", "hybrid stepwise")
+
+coefs.sw <- matrix(NA, nrow = K, ncol = 11)
+
+for (i in 1:K) {
+  ### Split data
+  data.train <- AQ[folds != i, ]
+  data.valid <- AQ[folds == i, ]
+  n.train <- nrow(data.train)
+
+  ### Get response vectors
+  Y.train <- data.train$Ozone
+  Y.valid <- data.valid$Ozone
+
+  ###################################################################
+  ### First, let's quickly do LS so we have a reference point for ###
+  ### how well the other models do.                               ###
+  ###################################################################
+
+  fit.ls <- lm(Ozone ~ ., data = data.train)
+  pred.ls <- predict(fit.ls, newdata = data.valid)
+  MSPE.ls <- get.MSPE(Y.valid, pred.ls)
+  all.MSPEs.LS.step[i, "LS"] <- MSPE.ls
+  
+  step <- step(
+    object = lm(Ozone ~ 1, data = data.train), scope = list(upper = fit.ls), direction = "both",
+    k = log(nrow(data.train)), trace = 0)
+  pred.sw <- predict(step, as.data.frame(data.valid))
+  MSPE.sw <- get.MSPE(Y.valid, pred.sw)
+  all.MSPEs.LS.step[i, "hybrid stepwise"] <- MSPE.sw
+}
+
+all.MSPEs.all = cbind(all.MSPEs.LS.step, all.MSPEs)
+boxplot(all.MSPEs.all, main = paste0("CV MSPEs over ", K, " folds"))
+```
+There isn't any big differences. The least-square and ridge models have lower MSPE
+but higher variance, whereas the LASSO-1se model has the lowest variance (but has
+a clear outlier).
+
+### (f)
+```{r}
+all.RMSPEs <- apply(all.MSPEs.all, 1, function(W) {
+  best <- min(W)
+  return(W / best)
+})
+all.RMSPEs <- t(all.RMSPEs)
+boxplot(all.RMSPEs, main = paste0("CV RMSPEs over ", K, " folds"))
+```
+The least-square and ridge models behave the best still.
+
+# Problem Set 8, Applications (Ozone Data)
+
+## 1
+
+### (a),(b),(c)
+```{r}
+library(pls)
+
+all.MSPEs.pls <- array(0, dim = c(K, 1))
+colnames(all.MSPEs.pls) <- c("PLS")
+
+n_comps = array(0, dim = c(K,1))
+
+for (i in 1:K) {
+  ### Split data
+  data.train <- AQ[folds != i, ]
+  data.valid <- AQ[folds == i, ]
+  n.train <- nrow(data.train)
+
+  ### Get response vectors
+  Y.train <- data.train$Ozone
+  Y.valid <- data.valid$Ozone
+
+  ### Now, let's do PLS using the plsr() function. The syntax is
+  ### very similar to lm(). If we set validation = "CV", the plsr()
+  ### function will do its own internal CV, and give MSPEs for each
+  ### number of components. We can then use this to choose how many
+  ### componenets to keep when doing prediction on the validation
+  ### fold. We can use an optional input called segments to specify
+  ### how many folds we want plsr() to use for its internal CV
+  ### (default is 10).
+  fit_pls <- plsr(Ozone ~ .,
+    data = data.train, validation = "CV",
+    segments = 5
+  )
+
+  ### Investigate the fitted PLS model. Comment out the next two
+  ### lines when running a CV loop
+
+  ### The summary function gives us lots of information about how
+  ### errors change as we increase the number of components
+  # summary(fit.pls)
+
+  ### The validationplot() function shows how MSPE from the internal
+  ### CV of plsr() changes with the number of included components.
+  # validationplot(fit.pls)
+
+  ### Get the best model from PLS. To do this, we need to find the model
+  ### that minimizes MSPE for the plsr() function's internal CV. It
+  ### takes a few steps, but all the information we need is contained
+  ### in the output of plsr().
+  CV_pls <- fit_pls$validation
+  pls_comps <- CV_pls$PRESS
+  n_comps[i] <- which.min(pls_comps)
+
+  ### Get predictions and calculate MSPE on the validation fold
+  ### Set ncomps equal to the optimal number of components
+  pred.pls <- predict(fit_pls, data.valid, ncomp = n_comps[i])
+  MSPE.pls <- get.MSPE(Y.valid, pred.pls)
+  all.MSPEs.pls[i, "PLS"] <- MSPE.pls
+}
+
+n_comps
+all.MSPEs.pls
+mean(all.MSPEs.pls)
+```
+The optimal number of components for each of the 10 folds range from 3 to 5 (5 just means that each variable is its own component). The average prediction error
+is 433.
+
+### (d)
+```{r}
+boxplot(cbind(all.MSPEs.all, all.MSPEs.pls), main = paste0("CV MSPEs over ", K, " folds"))
+```
+Compared with other models, the partial least squares estimate has the lowest MSPE and variance, but seems to be heavily skewed.
+
+### (e)
+```{r}
+all.RMSPEs.all <- apply(cbind(all.MSPEs.all, all.MSPEs.pls), 1, function(W) {
+  best <- min(W)
+  return(W / best)
+})
+all.RMSPEs.all <- t(all.RMSPEs.all)
+boxplot(all.RMSPEs.all, main = paste0("CV RMSPEs over ", K, " folds"))
+```
+The PLS prediction outperforms every other model, according to the relative prediction error. The LS and ridge models are also comparable to PLS.
+
+# Problem Set 9, Concepts
+
+## 1
+
+### (a)
+$β_o$ is the intercept value when the explanatory variable, X, is in region 0 of the step function (region used as the baseline) in the regression model.
+
+### (b)
+$β_k$ is the difference of intercept values when X is in the last region (region k) and $β_o$, the baseline region.
+
+# Problem Set 10, Applications
+
+## 

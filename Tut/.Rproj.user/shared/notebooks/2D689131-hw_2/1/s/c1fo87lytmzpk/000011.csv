@@ -1,0 +1,6 @@
+"0","all.RMSPEs.all <- apply(cbind(all.MSPEs.all, all.MSPEs.pls), 1, function(W) {"
+"0","  best <- min(W)"
+"0","  return(W / best)"
+"0","})"
+"0","all.RMSPEs.all <- t(all.RMSPEs.all)"
+"0","boxplot(all.RMSPEs.all, main = paste0(""CV RMSPEs over "", K, "" folds""))"
