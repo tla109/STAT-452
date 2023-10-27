@@ -368,9 +368,7 @@ for (i in 1:K) {
   ### how many folds we want plsr() to use for its internal CV
   ### (default is 10).
   fit_pls <- plsr(Ozone ~ .,
-    data = data.train, validation = "CV",
-    segments = 5
-  )
+    data = data.train, validation = "CV")
 
   ### Investigate the fitted PLS model. Comment out the next two
   ### lines when running a CV loop
