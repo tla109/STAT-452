@@ -1,26 +1,26 @@
 {
-    "id": "C2BF14D3",
-    "path": "C:/Users/Terry Liu/Desktop/STAT 452/Tut/Sec07_Tutorial.R",
-    "project_path": "Sec07_Tutorial.R",
+    "id": "5EF08C3F",
+    "path": "C:/Users/Terry Liu/Desktop/STAT 452/Tut/Sec08_Tutorial.R",
+    "project_path": "Sec08_Tutorial.R",
     "type": "r_source",
-    "hash": "3875766268",
+    "hash": "3403063698",
     "contents": "",
     "dirty": false,
-    "created": 1698297589537.0,
+    "created": 1698365500776.0,
     "source_on_save": false,
     "relative_order": 2,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "100,50",
-        "scrollLine": "79"
+        "cursorPosition": "33,0",
+        "scrollLine": "10"
     },
     "folds": "",
-    "lastKnownWriteTime": 1698297526,
+    "lastKnownWriteTime": 1698366373,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1698297526,
+    "last_content_update": 1698366373471,
     "read_only": false,
     "read_only_alternatives": []
 }
