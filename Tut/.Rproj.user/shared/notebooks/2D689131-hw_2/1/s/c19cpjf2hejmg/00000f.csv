@@ -1,5 +1,8 @@
-"0","coef.step
-"
+"0","  step <- step("
+"0","    object = lm(y ~ 1, data = AQ), scope = list(upper = mod.lm), direction = ""both"","
+"0","    k = log(nrow(AQ)), trace = 0)"
+"0","coef.step <- coef(step)"
+"0","coef.step"
 "1"," (Intercept) "
 "1","       TWrat "
 "1","        Temp "

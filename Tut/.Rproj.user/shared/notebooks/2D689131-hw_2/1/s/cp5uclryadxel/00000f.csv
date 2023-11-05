@@ -1,0 +1,4 @@
+"0","AQ <- na.omit(airquality[,1:4])"
+"0","AQ$TWcp = AQ$Temp*AQ$Wind"
+"0","AQ$TWrat = AQ$Temp/AQ$Wind"
+"0","head(AQ)"

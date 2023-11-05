@@ -1,6 +1,0 @@
-"0","legend(x = 55, y = 180, legend = c("
-"0","    ""Cubic poly"", ""Cubic Spline 5 df"","
-"0","    ""Cubic Spline 7 df"", ""Cubic Spline 9 df"", ""Cubic Spline 20 df"""
-"0","  ),"
-"0","  lty = ""solid"", col = c('black', 'red', 'blue', 'green', 'gold'), lwd = 2"
-"0",")"
