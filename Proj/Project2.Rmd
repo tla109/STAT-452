@@ -1,0 +1,19 @@
+---
+title: "Project2"
+author: "Terry"
+date: "2023-11-06"
+output: html_document
+---
+
+```{r}
+IRIS = iris[iris$Species == c("setosa", "virginica"),]
+
+library(ROCR)
+rocplot =function (pred , truth , ...){
+  predob = prediction (pred , truth)
+  perf = performance (predob , "tpr", "fpr")
+  plot(perf ,...)}
+
+
+
+```
