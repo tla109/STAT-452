@@ -3,7 +3,7 @@
 ### regression and discriminant analysis.
 
 ### Read-in and process the data
-source("Class_Examples/Read_Wine_Data_Class.R")
+source("Read_Wine_Data_Class.R")
 
 ### Activate packages
 library(nnet) # For logistic regression
