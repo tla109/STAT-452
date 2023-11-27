@@ -42,6 +42,7 @@ library(glmnet)
 library(pls)
 library(rpart)
 library(randomForest)
+library(gbm)
 
 K <- 100
 
@@ -51,7 +52,8 @@ folds <- get.folds(n, K)
 
 ### Create a container for MSPEs. Let's include ordinary least-squares
 ### regression for reference
-all.models <- c("Ridge", "LASSO-Min", "LASSO-1se", "LS", "hybrid stepwise", "PLS", "RTBoot", "RF", "RF_Tune", )
+all.models <- c("Ridge", "LASSO-Min", "LASSO-1se", "LS", "hybrid stepwise", "PLS", 
+                "RTBoot", "RF", "RF_Tune", "Boost", "Boost_Engineer")
 all.MSPEs <- array(0, dim = c(K, length(all.models)))
 colnames(all.MSPEs) <- all.models
 
@@ -62,10 +64,15 @@ nodes <- c(3, 5, 10)
 rf_tun_best <- matrix(NA, nrow = K, ncol = 2)
 rf_tun_best[, 2] <- 1:K
 
+lam_vals <- c(0.001, 0.005, 0.025, 0.125)
+d_vals <- c(2, 4, 6)
+
 boost_orig_tun_best <- matrix(NA, nrow = K, ncol = 3)
 boost_orig_tun_best[, 3] <- 1:K
 boost_eng_tun_best <- matrix(NA, nrow = K, ncol = 3)
 boost_eng_tun_best[, 3] <- 1:K
+
+n_trees <- 10000
 
 ### Begin cross-validation
 for (i in 1:K) {
@@ -221,7 +228,7 @@ for (i in 1:K) {
   
   ## values which give you the best fit
   best <- names(which.min(rf_tun_vals))
-  rf_tun_best[k, 1] <- best
+  rf_tun_best[i, 1] <- best
   
   ## then need to use those settings
   m_best <- parms[which.min(rf_tun_vals), 1]
@@ -234,6 +241,57 @@ for (i in 1:K) {
   rf_tuned_pred <- predict(rf_tuned, newdata = data.valid)
   rf_tuned_mspe <- get.MSPE(Y.valid, rf_tuned_pred)
   all.MSPEs[i, "RF_Tune"] <- rf_tuned_mspe
+  
+  #### Boosting Versions ####
+  ### Tuning using only original features
+  boost_tun_values <- rep(0, length(lam_vals) * length(d_vals))
+  boost_opt_tree <- rep(0, length(lam_vals) * length(d_vals))
+  counter <- 1
+  for (d in d_vals) {
+    for (s in lam_vals) {
+      pro.gbm <- gbm(Y ~ ., data = data.train, distribution = "gaussian",
+      n.trees = n_trees, interaction.depth = d, shrinkage = s, bag.fraction = 0.8)
+      treenum <- min(n_trees, 2 * gbm.perf(pro.gbm, method = "OOB", plot.it = FALSE))
+      boost_opt_tree[counter] <- treenum
+      preds <- predict(pro.gbm, newdata = data.valid, n.trees = treenum)
+      boost_tun_values[counter] <- mean((preds - Y.valid)^2)
+      counter <- counter + 1
+    }
+  }
+
+  ## then figure out which setting was best for this fold
+  parms <- expand.grid(lam_vals, d_vals)
+  names(boost_tun_values) <- paste(parms[, 2], parms[, 1], sep = "|")
+  best <- names(which.min(boost_tun_values))
+  boost_orig_tun_best[i, 1] <- best
+  boost_orig_tun_best[i, 2] <- boost_opt_tree[which.min(boost_tun_values)]
+  all.MSPEs[i, "Boost"] <- min(boost_tun_values)
+
+  #### Using new features also
+  ### Tuning using only original features
+  boost_tun_values <- rep(0, length(lam_vals) * length(d_vals))
+  boost_opt_tree <- rep(0, length(lam_vals) * length(d_vals))
+  counter <- 1
+  for (d in d_vals) {
+    for (s in lam_vals) {
+      pro.gbm <- gbm(Y ~ ., data = data.train, distribution = "gaussian",
+      n.trees = n_trees, interaction.depth = d, shrinkage = s, bag.fraction = 0.8)
+      treenum <- min(n_trees, 2 * gbm.perf(pro.gbm, method = "OOB", plot.it = FALSE))
+      boost_opt_tree[counter] <- treenum
+      preds <- predict(pro.gbm, newdata = data.valid, n.trees = treenum)
+      boost_tun_values[counter] <- mean((preds - Y.valid)^2)
+      counter <- counter + 1
+    }
+  }
+
+  ## then figure out which setting was best for this fold
+  parms <- expand.grid(lam_vals, d_vals)
+  names(boost_tun_values) <- paste(parms[, 2], parms[, 1], sep = "|")
+  best <- names(which.min(boost_tun_values))
+  boost_eng_tun_best[i, 1] <- best
+  boost_eng_tun_best[i, 2] <- boost_opt_tree[which.min(boost_tun_values)]
+  all.MSPEs[i, "Boost_Engineer"] <- min(boost_tun_values)
+
 }
 
 beep()
@@ -253,37 +311,3 @@ all.RMSPEs <- t(all.RMSPEs)
 boxplot(all.RMSPEs, main = paste0("CV RMSPEs over ", K, " folds"))
 ```
 Very similar, but hybrid stepwise has lowest MSPE.
-
-Next up is random forest.
-```{r}
-library(randomForest)
-
-all.models2 <- c("RF", "Boosting")
-all.MSPEs2 <- array(0, dim = c(K, length(all.models2)))
-colnames(all.MSPEs2) <- all.models2
-
-fit.rf.1 <- randomForest(Y ~ ., data = proj, importance = T)
-
-### Plotting this RF object lets us see if we used enough trees. If not, you can
-### change this by re-running randomForest() and setting ntree to a higher
-### number (default is 500)
-plot(fit.rf.1)
-
-### We can get variable importance measures using the importance() function, and
-### we can plot them using VarImpPlot()
-importance(fit.rf.1)
-varImpPlot(fit.rf.1)
-
-### We can get out-of-bag (OOB) error directly from the predict() function.
-### Specifically, if we don't include a new dataset, R gives the OOB predictions
-### on the training set.
-OOB.pred.1 <- predict(fit.rf.1)
-(OOB.MSPE.1 <- get.MSPE(proj$Y, OOB.pred.1))
-
-### For reference, we can get the SMSE by using our training set with predict()
-sample.pred.1 <- predict(fit.rf.1, data)
-(SMSE.1 <- get.MSPE(data$alcohol, sample.pred.1))
-
-
-```
-
