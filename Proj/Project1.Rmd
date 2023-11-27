@@ -6,6 +6,9 @@ output: html_document
 ---
 
 ```{r}
+
+remove(list=ls())
+set.seed(301249861)
 #load in the data
 proj = read.csv("training_data.csv", header = TRUE)
 head(proj)
@@ -33,6 +36,7 @@ library(stringr)
 library(MASS)
 library(glmnet)
 library(pls)
+library(rpart)
 
 K <- 100
 
@@ -42,9 +46,11 @@ folds <- get.folds(n, K)
 
 ### Create a container for MSPEs. Let's include ordinary least-squares
 ### regression for reference
-all.models <- c("Ridge", "LASSO-Min", "LASSO-1se", "LS", "hybrid stepwise", "PLS")
+all.models <- c("Ridge", "LASSO-Min", "LASSO-1se", "LS", "hybrid stepwise", "PLS", "RTBoot")
 all.MSPEs <- array(0, dim = c(K, length(all.models)))
 colnames(all.MSPEs) <- all.models
+
+pred.tree <- matrix(NA, nrow = n, ncol = K)
 
 ### Begin cross-validation
 for (i in 1:K) {
@@ -150,6 +156,29 @@ for (i in 1:K) {
   pred.pls <- predict(fit_pls, data.valid, ncomp = n_comps)
   MSPE.pls <- get.MSPE(Y.valid, pred.pls)
   all.MSPEs[i, "PLS"] <- MSPE.pls
+  
+  ### Regression Tree (RT), with boosting
+  
+  pr.tree1 <- rpart(Y ~ ., method = "anova", data = data.train, cp = 0)
+  cpt1 <- pr.tree1$cptable
+
+  # Find location of minimum error
+  minrow1 <- which.min(cpt1[, 4])
+  # Take geometric mean of cp values at min error and one step up
+  cplow.min1 <- cpt1[minrow1, 1]
+  cpup.min1 <- ifelse(minrow1 == 1, yes = 1, no = cpt1[minrow1 - 1, 1])
+  cp.min1 <- sqrt(cplow.min1 * cpup.min1)
+
+  # Do pruning each way
+  pr.prune.min1 <- prune(pr.tree1, cp = cp.min1)
+
+  # Plot these points line
+  preds1 <- predict(pr.prune.min1, newdata = data.valid)
+
+  pred.tree[, i] <- preds1
+  
+  MSPE.RTBoot.min <- get.MSPE(Y.valid, pred.tree)
+  all.MSPEs[i, "RTBoot"] <- MSPE.RTBoot.min
 }
 
 avg.MSPEs = colMeans(all.MSPEs)
@@ -163,5 +192,51 @@ all.RMSPEs <- apply(all.MSPEs, 1, function(W) {
 })
 all.RMSPEs <- t(all.RMSPEs)
 boxplot(all.RMSPEs, main = paste0("CV RMSPEs over ", K, " folds"))
+```
+Very similar, but hybrid stepwise has lowest MSPE.
+
+Next up is regression tree.
+```{r}
+library(rpart)
+
+all.models2 <- c("RTBoot", "RF", "Boosting")
+all.MSPEs2 <- array(0, dim = c(K, length(all.models2)))
+colnames(all.MSPEs2) <- all.models2
+
+pred.tree <- matrix(NA, nrow = n, ncol = K)
+
+for (i in 1:K) {
+  ### Split data
+  data.train <- proj[folds != i, ]
+  data.valid <- proj[folds == i, ]
+  n.train <- nrow(data.train)
+
+  ### Get response vectors
+  Y.train <- data.train$Y
+  Y.valid <- data.valid$Y
+
+  pr.tree1 <- rpart(Y ~ ., method = "anova", data = data.train, cp = 0)
+  cpt1 <- pr.tree1$cptable
+
+  # Find location of minimum error
+  minrow1 <- which.min(cpt1[, 4])
+  # Take geometric mean of cp values at min error and one step up
+  cplow.min1 <- cpt1[minrow1, 1]
+  cpup.min1 <- ifelse(minrow1 == 1, yes = 1, no = cpt1[minrow1 - 1, 1])
+  cp.min1 <- sqrt(cplow.min1 * cpup.min1)
+
+  # Do pruning each way
+  pr.prune.min1 <- prune(pr.tree1, cp = cp.min1)
+
+  # Plot these points line
+  preds1 <- predict(pr.prune.min1, newdata = data.valid)
+
+  pred.tree[, i] <- preds1
+  
+  MSPE.RTBoot.min <- get.MSPE(Y.valid, pred.tree)
+  all.MSPEs2[i, "RTBoot"] <- MSPE.RTBoot.min
+  
+  
+}
 ```
 
