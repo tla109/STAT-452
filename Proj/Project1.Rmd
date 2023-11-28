@@ -44,7 +44,7 @@ library(rpart)
 library(randomForest)
 library(gbm)
 
-K <- 100
+K <- 5
 
 ### Construct folds
 n <- nrow(proj) # Sample size
@@ -75,6 +75,8 @@ boost_eng_tun_best[, 3] <- 1:K
 n_trees <- 10000
 
 ### Begin cross-validation
+begin = Sys.time()
+
 for (i in 1:K) {
   ### Split data
   data.train <- proj[folds != i, ]
@@ -294,6 +296,8 @@ for (i in 1:K) {
 
 }
 
+end = Sys.time()
+(begin - end)
 beep()
 
 avg.MSPEs = colMeans(all.MSPEs)
