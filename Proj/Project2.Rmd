@@ -6,7 +6,12 @@ output: html_document
 ---
 
 ```{r}
-IRIS = iris[iris$Species == c("setosa", "virginica"),]
+remove(list=ls())
+
+## water quality data, potability is a binary variable 0 or 1
+water = read.csv("water_potability.csv", header = TRUE)
+water$Potability = as.factor(water$Potability)
+summary(water)
 
 library(ROCR)
 rocplot =function (pred , truth , ...){
