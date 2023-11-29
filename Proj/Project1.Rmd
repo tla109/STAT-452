@@ -181,7 +181,7 @@ for (i in 1:K) {
   MSPE.pls <- get.MSPE(Y.valid, pred.pls)
   all.MSPEs[i, "PLS"] <- MSPE.pls
   
-  ### Regression Tree (RT), with boosting
+  ### Regression Tree (RT), with bootstrap
   
   pr.tree1 <- rpart(Y ~ ., method = "anova", data = data.train, cp = 0)
   cpt1 <- pr.tree1$cptable
@@ -297,7 +297,7 @@ for (i in 1:K) {
 }
 
 end = Sys.time()
-(begin - end)
+(end - begin)
 beep()
 
 avg.MSPEs = colMeans(all.MSPEs)
@@ -314,4 +314,30 @@ all.RMSPEs <- apply(all.MSPEs, 1, function(W) {
 all.RMSPEs <- t(all.RMSPEs)
 boxplot(all.RMSPEs, main = paste0("CV RMSPEs over ", K, " folds"))
 ```
-Very similar, but hybrid stepwise has lowest MSPE.
+Random Forest has lowest MSPE.
+
+```{r}
+### now focus on random forest
+## include interaction terms
+
+begin.rf = Sys.time()
+
+for (i in 1:K) {
+  ### Split data
+  data.train <- proj[folds != i, ]
+  data.valid <- proj[folds == i, ]
+
+  ### Get response vectors
+  Y.train <- data.train$Y
+  Y.valid <- data.valid$Y
+  
+  fit_rf <- randomForest(Y ~., data = data.train, importance = T)
+  (importance(fit_rf))
+}
+
+end.rf = Sys.time()
+
+(end.rf - begin.rf)
+
+
+```
