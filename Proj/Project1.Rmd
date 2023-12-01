@@ -52,8 +52,7 @@ folds <- get.folds(n, K)
 
 ### Create a container for MSPEs. Let's include ordinary least-squares
 ### regression for reference
-all.models <- c("Ridge", "LASSO-Min", "LASSO-1se", "LS", "hybrid stepwise", "PLS", 
-                "RTBoot", "RF", "RF_Tune", "Boost", "Boost_Engineer")
+all.models <- c("Ridge", "LASSO-Min", "LASSO-1se", "LS", "hybrid stepwise", "PLS", "RTBoot", "RF", "RF_Tune", "Boost", "Boost_Engineer")
 all.MSPEs <- array(0, dim = c(K, length(all.models)))
 colnames(all.MSPEs) <- all.models
 
@@ -297,7 +296,7 @@ for (i in 1:K) {
 }
 
 end = Sys.time()
-(end - begin)
+(end - begin) ## can take up to 5 hours
 beep()
 
 avg.MSPEs = colMeans(all.MSPEs)
@@ -318,26 +317,34 @@ Random Forest has lowest MSPE.
 
 ```{r}
 ### now focus on random forest
-## include interaction terms
 
 begin.rf = Sys.time()
 
-for (i in 1:K) {
-  ### Split data
-  data.train <- proj[folds != i, ]
-  data.valid <- proj[folds == i, ]
+fit_rf <- randomForest(Y ~., data = proj, importance = T)
+(importance(fit_rf))
+varImpPlot(fit_rf)
 
-  ### Get response vectors
-  Y.train <- data.train$Y
-  Y.valid <- data.valid$Y
-  
-  fit_rf <- randomForest(Y ~., data = data.train, importance = T)
-  (importance(fit_rf))
-}
+end.rf = Sys.time()
+
+(end.rf - begin.rf)
+```
+
+The important variables are X1, X5, X8, X11, X12, X13, X18, X20, and X21, so fit a regression tree with these variables to the prediction dataset.
+
+```{r}
+begin.rf = Sys.time()
+
+fit_rf_imp <- randomForest(Y ~ X1 + X5 + X8 + X11 + X12 + X13 + X18 + X20 + X21, data = proj, importance = T)
+(importance(fit_rf_imp))
+varImpPlot(fit_rf_imp)
 
 end.rf = Sys.time()
 
 (end.rf - begin.rf)
 
-
+tp = read.csv("test_predictors.csv", header = T)
+tp_rf <- predict(fit_rf_imp, newdata = tp)
+write.table(tp_rf, "response.csv", sep = ",", 
+            row.names = FALSE, col.names = FALSE)
 ```
+
