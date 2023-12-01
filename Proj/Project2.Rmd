@@ -129,6 +129,7 @@ set.seed(1)
 begin = Sys.time()
 svmfit = svm(is_safe ~., data=data.train, kernel = "radial", gamma = 1, cost=1)
 summary(svmfit)
+plot(data.train, col = data.train[,21])
 (Sys.time() - begin)
 
 ## cost = 1e5
@@ -144,15 +145,16 @@ tune.out=tune(svm, is_safe ~., data=data.train, kernel = "radial",
 summary(tune.out)
 (Sys.time() - begin)
 
-## select best SVM model
-table(true=Y.valid, pred=predict(tune.out$best.model,
-newdata = data.valid))
+## select best SVM model and use it for prediction
+pred.svm = predict(tune.out$best.model, newdata = data.valid)
+table(true=Y.valid, pred=pred.svm)
+
+(miss.svm <- mean(Y.valid != pred.svm))
 
 ## ROC Curve
 svmfit.opt= svm(is_safe ~., data=data.train, kernel = "radial",
-gamma = 2, cost = 1, decision.values = T)
+gamma = 0.5, cost = 0.1, decision.values = T)
 fitted =attributes(predict(svmfit.opt, data.valid, decision.values=TRUE))$decision.values
 rocplot(fitted, Y.valid, main = "SVM")
 (performance(prediction(fitted, Y.valid), measure = "auc"))@y.values[[1]]
 ```
-
