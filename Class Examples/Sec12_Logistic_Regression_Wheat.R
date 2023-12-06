@@ -1,7 +1,7 @@
 # Multinomial Logistic Regression on Wheat Data
 ##########
 # Enter data and do some processing
-wheat <- read.csv("wheat.csv")
+wheat <- read.csv("Datasets/wheat.csv")
 head(wheat)
 summary(wheat)
 
